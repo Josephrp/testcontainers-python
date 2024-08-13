@@ -3,9 +3,8 @@ import urllib.request
 from urllib.error import URLError
 
 from core.testcontainers.core.container import DockerContainer
-from core.testcontainers.core.waiting_utils import wait_container_is_ready
-from core.testcontainers.core.config import testcontainers_config
-from core.testcontainers.core.waiting_utils import wait_for_logs
+from core.testcontainers.core.waiting_utils import wait_container_is_ready, wait_for_logs
+
 
 class JAXContainer(DockerContainer):
     """
@@ -21,7 +20,7 @@ class JAXContainer(DockerContainer):
         >>> with JAXContainer("nvcr.io/nvidia/jax:23.08-py3") as jax_container:
         ...     # Connect to the container
         ...     jax_container.connect()
-        ...     
+        ...
         ...     # Run a simple JAX computation
         ...     result = jax.numpy.add(1, 1)
         ...     assert result == 2
@@ -38,7 +37,7 @@ class JAXContainer(DockerContainer):
         self.with_env("NVIDIA_VISIBLE_DEVICES", "all")
         self.with_env("CUDA_VISIBLE_DEVICES", "all")
         self.with_kwargs(runtime="nvidia")  # Use NVIDIA runtime for GPU support
-        self.start_timeout = 600 # 10 minutes
+        self.start_timeout = 600  # 10 minutes
 
     @wait_container_is_ready(URLError)
     def _connect(self):
@@ -78,7 +77,7 @@ class JAXContainer(DockerContainer):
         self._wait_for_container_to_be_ready()
         logging.info(f"JAX container started. Jupyter URL: {self.get_jupyter_url()}")
         return self
-    
+
     def stop(self, force=True):
         """
         Stop the JAX container.

@@ -1,10 +1,10 @@
 import logging
-import tempfile
 from typing import Optional
+from urllib.error import URLError
 
 from core.testcontainers.core.container import DockerContainer
 from core.testcontainers.core.waiting_utils import wait_container_is_ready
-from urllib.error import URLError
+
 
 class JAXWhisperDiarizationContainer(DockerContainer):
     """
@@ -15,17 +15,17 @@ class JAXWhisperDiarizationContainer(DockerContainer):
         .. doctest::
 
         >>> logging.basicConfig(level=logging.INFO)
-        
+
         ... # You need to provide your Hugging Face token to use the pyannote.audio models
         >>> hf_token = "your_huggingface_token_here"
-        
+
         >>> with JAXWhisperDiarizationContainer(hf_token=hf_token) as whisper_diarization:
         ... whisper_diarization.connect()
-        ... 
+        ...
         ... # Example: Transcribe and diarize an audio file
         ... result = whisper_diarization.transcribe_and_diarize_file("/path/to/audio/file.wav")
         ... print(f"Transcription and Diarization: {result}")
-        ... 
+        ...
         ... # Example: Transcribe and diarize a YouTube video
         ... result = whisper_diarization.transcribe_and_diarize_youtube("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
         ... print(f"YouTube Transcription and Diarization: {result}")
@@ -43,40 +43,30 @@ class JAXWhisperDiarizationContainer(DockerContainer):
         self.connection_retry_delay = 10  # seconds
 
         # Install required dependencies
-        self.with_command("sh -c '"
-                          "pip install --no-cache-dir git+https://github.com/sanchit-gandhi/whisper-jax.git && "
-                          "pip install --no-cache-dir numpy soundfile youtube_dl transformers datasets pyannote.audio && "
-                          "python -m pip install --upgrade --no-cache-dir jax jaxlib -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html"
-                          "'")
+        self.with_command(
+            "sh -c '"
+            "pip install --no-cache-dir git+https://github.com/sanchit-gandhi/whisper-jax.git && "
+            "pip install --no-cache-dir numpy soundfile youtube_dl transformers datasets pyannote.audio && "
+            "python -m pip install --upgrade --no-cache-dir jax jaxlib -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html"
+            "'"
+        )
 
     @wait_container_is_ready(URLError)
     def _connect(self):
-        for attempt in range(self.connection_retries):
-            try:
-                # Check if JAX and other required libraries are properly installed and functioning
-                result = self.run_command(
-                    "import jax; import whisper_jax; import pyannote.audio; "
-                    "print(f'JAX version: {jax.__version__}'); "
-                    "print(f'Whisper-JAX version: {whisper_jax.__version__}'); "
-                    "print(f'Pyannote Audio version: {pyannote.audio.__version__}'); "
-                    "print(f'Available devices: {jax.devices()}'); "
-                    "print(jax.numpy.add(1, 1))"
-                )
-                
-                if "JAX version" in result.output.decode() and "Available devices" in result.output.decode():
-                    logging.info(f"JAX-Whisper-Diarization environment verified:\n{result.output.decode()}")
-                    return True
-                else:
-                    raise Exception("JAX-Whisper-Diarization environment check failed")
-            
-            except Exception as e:
-                if attempt < self.connection_retries - 1:
-                    logging.warning(f"Connection attempt {attempt + 1} failed. Retrying in {self.connection_retry_delay} seconds...")
-                    time.sleep(self.connection_retry_delay)
-                else:
-                    raise Exception(f"Failed to connect to JAX-Whisper-Diarization container after {self.connection_retries} attempts: {str(e)}")
-        
-        return False
+        # Check if JAX and other required libraries are properly installed and functioning
+        result = self.run_command(
+            "import jax; import whisper_jax; import pyannote.audio; "
+            "print(f'JAX version: {jax.__version__}'); "
+            "print(f'Whisper-JAX version: {whisper_jax.__version__}'); "
+            "print(f'Pyannote Audio version: {pyannote.audio.__version__}'); "
+            "print(f'Available devices: {jax.devices()}'); "
+            "print(jax.numpy.add(1, 1))"
+        )
+
+        if "JAX version" in result.output.decode() and "Available devices" in result.output.decode():
+            logging.info(f"JAX-Whisper-Diarization environment verified:\n{result.output.decode()}")
+        else:
+            raise Exception("JAX-Whisper-Diarization environment check failed")
 
     def connect(self):
         """
@@ -94,7 +84,9 @@ class JAXWhisperDiarizationContainer(DockerContainer):
         exec_result = self.exec(f"python -c '{command}'")
         return exec_result
 
-    def transcribe_and_diarize_file(self, file_path: str, task: str = "transcribe", return_timestamps: bool = True, group_by_speaker: bool = True):
+    def transcribe_and_diarize_file(
+        self, file_path: str, task: str = "transcribe", return_timestamps: bool = True, group_by_speaker: bool = True
+    ):
         """
         Transcribe and diarize an audio file using Whisper-JAX and pyannote.
         """
@@ -171,7 +163,9 @@ print(aligned_result)
 """
         return self.run_command(command)
 
-    def transcribe_and_diarize_youtube(self, youtube_url: str, task: str = "transcribe", return_timestamps: bool = True, group_by_speaker: bool = True):
+    def transcribe_and_diarize_youtube(
+        self, youtube_url: str, task: str = "transcribe", return_timestamps: bool = True, group_by_speaker: bool = True
+    ):
         """
         Transcribe and diarize a YouTube video using Whisper-JAX and pyannote.
         """

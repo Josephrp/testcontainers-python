@@ -1,11 +1,9 @@
 import logging
-import tempfile
-import time
-from typing import Optional
+from urllib.error import URLError
 
 from core.testcontainers.core.container import DockerContainer
 from core.testcontainers.core.waiting_utils import wait_container_is_ready
-from urllib.error import URLError
+
 
 class WhisperJAXContainer(DockerContainer):
     """
@@ -20,7 +18,7 @@ class WhisperJAXContainer(DockerContainer):
             >>> with WhisperJAXContainer("openai/whisper-large-v2") as whisper:
             ...     # Connect to the container
             ...     whisper.connect()
-            ...     
+            ...
             ...     # Transcribe an audio file
             ...     result = whisper.transcribe_file("path/to/audio/file.wav")
             ...     print(result['text'])
@@ -39,15 +37,19 @@ class WhisperJAXContainer(DockerContainer):
         self.with_kwargs(runtime="nvidia")  # Use NVIDIA runtime for GPU support
 
         # Install required dependencies
-        self.with_command("sh -c '"
-                          "pip install --no-cache-dir git+https://github.com/sanchit-gandhi/whisper-jax.git && "
-                          "pip install --no-cache-dir numpy soundfile youtube_dl transformers datasets && "
-                          "python -m pip install --upgrade --no-cache-dir jax jaxlib -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html && "
-                          "jupyter notebook --ip 0.0.0.0 --port 8888 --allow-root --NotebookApp.token='' --NotebookApp.password=''"
-                          "'")
+        self.with_command(
+            "sh -c '"
+            "pip install --no-cache-dir git+https://github.com/sanchit-gandhi/whisper-jax.git && "
+            "pip install --no-cache-dir numpy soundfile youtube_dl transformers datasets && "
+            "python -m pip install --upgrade --no-cache-dir jax jaxlib -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html && "
+            "jupyter notebook --ip 0.0.0.0 --port 8888 --allow-root --NotebookApp.token='' --NotebookApp.password=''"
+            "'"
+        )
 
     @wait_container_is_ready(URLError)
     def _connect(self):
+        import urllib.request
+
         url = f"http://{self.get_container_host_ip()}:{self.get_exposed_port(8888)}"
         res = urllib.request.urlopen(url)
         if res.status != 200:
@@ -122,5 +124,7 @@ with tempfile.NamedTemporaryFile(suffix=".wav") as temp_file:
         Start the Whisper-JAX container.
         """
         super().start()
-        logging.info(f"Whisper-JAX container started. Jupyter URL: http://{self.get_container_host_ip()}:{self.get_exposed_port(8888)}")
+        logging.info(
+            f"Whisper-JAX container started. Jupyter URL: http://{self.get_container_host_ip()}:{self.get_exposed_port(8888)}"
+        )
         return self

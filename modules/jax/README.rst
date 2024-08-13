@@ -5,7 +5,7 @@
 1. **Official JAX Docker Container**
    - **Container**: `jax/jax:cuda-12.0`
    - **Documentation**: [JAX Docker](https://github.com/google/jax/blob/main/docker/README.md)
-   
+
 2. **NVIDIA Docker Container**
    - **Container**: `nvidia/cuda:12.0-cudnn8-devel-ubuntu20.04`
    - **Documentation**: [NVIDIA Docker Hub](https://hub.docker.com/r/nvidia/cuda)
@@ -25,7 +25,7 @@
 **Ensure Docker is configured to use the NVIDIA runtime**:
    - You need to install the NVIDIA Container Toolkit. Follow the instructions for your operating system: [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
    - Update your Docker daemon configuration to include the NVIDIA runtime. Edit the Docker daemon configuration file, typically located at `/etc/docker/daemon.json`, to include the following:
-     
+
      ```json
      {
        "runtimes": {

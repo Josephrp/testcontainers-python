@@ -1,9 +1,9 @@
 import logging
-import time
 from urllib.error import URLError
 
 from core.testcontainers.core.container import DockerContainer
 from core.testcontainers.core.waiting_utils import wait_container_is_ready, wait_for_logs
+
 
 class JAXContainer(DockerContainer):
     """
@@ -18,7 +18,7 @@ class JAXContainer(DockerContainer):
         >>> with JAXContainer("nvcr.io/nvidia/jax:23.08-py3") as jax_container:
         ...     # Connect to the container
         ...     jax_container.connect()
-        ...     
+        ...
         ...     # Run a simple JAX computation
         ...     result = jax_container.run_jax_command("import jax; print(jax.numpy.add(1, 1))")
         ...     assert "2" in result.output
@@ -40,31 +40,19 @@ class JAXContainer(DockerContainer):
 
     @wait_container_is_ready(URLError)
     def _connect(self):
-        for attempt in range(self.connection_retries):
-            try:
-                # Check if JAX is properly installed and functioning
-                result = self.run_jax_command(
-                    "import jax; import jaxlib; "
-                    "print(f'JAX version: {jax.__version__}'); "
-                    "print(f'JAXlib version: {jaxlib.__version__}'); "
-                    "print(f'Available devices: {jax.devices()}'); "
-                    "print(jax.numpy.add(1, 1))"
-                )
-                
-                if "JAX version" in result.output and "Available devices" in result.output:
-                    logging.info(f"JAX environment verified:\n{result.output}")
-                    return True
-                else:
-                    raise Exception("JAX environment check failed")
-            
-            except Exception as e:
-                if attempt < self.connection_retries - 1:
-                    logging.warning(f"Connection attempt {attempt + 1} failed. Retrying in {self.connection_retry_delay} seconds...")
-                    time.sleep(self.connection_retry_delay)
-                else:
-                    raise Exception(f"Failed to connect to JAX container after {self.connection_retries} attempts: {str(e)}")
-        
-        return False
+        # Check if JAX is properly installed and functioning
+        result = self.run_jax_command(
+            "import jax; import jaxlib; "
+            "print(f'JAX version: {jax.__version__}'); "
+            "print(f'JAXlib version: {jaxlib.__version__}'); "
+            "print(f'Available devices: {jax.devices()}'); "
+            "print(jax.numpy.add(1, 1))"
+        )
+
+        if "JAX version" in result.output and "Available devices" in result.output:
+            logging.info(f"JAX environment verified:\n{result.output}")
+        else:
+            raise Exception("JAX environment check failed")
 
     def connect(self):
         """
@@ -93,12 +81,12 @@ class JAXContainer(DockerContainer):
         self._wait_for_container_to_be_ready()
         logging.info("JAX container started and ready.")
         return self
-    
-    def stop(self, force=True):
+
+    def stop(self, force=True, delete_volume=True) -> None:
         """
         Stop the JAX container.
         """
-        super().stop(force)
+        super().stop(force, delete_volume)
         logging.info("JAX container stopped.")
 
     @property
